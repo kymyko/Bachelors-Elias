@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Psychologist Profile{% endblock %}
+
+{% block content %}
+    <div class="profile-card">
+        <p><strong>Username:</strong> {{ psychologist.user.username }}</p>
+        <p><strong>Email:</strong> {{ psychologist.user.email }}</p>
+        <p><strong>Address:</strong> {{ psychologist.user.address }}</p>
+        <p><strong>Name:</strong> {{ psychologist.name or "No information provided yet!!!" }}</p>
+        <p><strong>Age:</strong> {{ psychologist.age or "No information provided yet!!!" }}</p>
+        <p><strong>Specialization:</strong> {{ psychologist.specialization or "No information provided yet!!!" }}</p>
+    </div>
+
+<h3 class="schedule-header">Availability</h3>
+    <div>
+    <form id="appointment-form" action="{{ url_for('appointments.make_appointment', id=psychologist.id) }}" method="post">
+    {{ form.hidden_tag() }} {# Assuming you're using WTForms #}
+    <input type="hidden" name="selected_time" id="selected-time">
+    <table class="table styled-table">
+        <thead>
+            <tr>
+                <th>Hour</th>
+                <th>Monday</th>
+                <th>Tuesday</th>
+                <th>Wednesday</th>
+                <th>Thursday</th>
+                <th>Friday</th>
+                <th>Saturday</th>
+                <th>Sunday</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for hour in range(8, 20) %}
+                <tr>
+                    <td>{{ hour }}:00</td>
+                    {% for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
+                        {% set cell_status = working_hours.get(day, {}).get(hour|string, 'Available') %}
+                        {% if cell_status == 'Unavailable' %}
+                            <td class="working-hour-cell unavailable">{{ cell_status }}</td>
+                        {% else %}
+                            <td class="working-hour-cell {% if cell_status == 'Booked' %}booked{% else %}available{% endif %}" data-day="{{ day }}" data-hour="{{ hour }}">
+                                {{ cell_status }}
+                            </td>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <button type="submit" id="make-appointment-btn" class="btn btn-primary styled-button" disabled>Make Appointment</button>
+    <p id="appointment-msg" style="color: red; font-weight: bold;"></p>
+</form>
+
+    </div>
+<script>
+    document.querySelectorAll('.working-hour-cell').forEach(cell => {
+        cell.addEventListener('click', function() {
+            const currentStatus = this.innerText.trim();
+            if (currentStatus !== 'Unavailable') {
+                this.innerText = currentStatus === 'Available' ? 'Booked' : 'Available';
+                this.classList.toggle('available');
+                this.classList.toggle('booked');
+                updateAppointmentButton();
+            }
+        });
+    });
+
+    function updateAppointmentButton() {
+        const selectedCells = document.querySelectorAll('.working-hour-cell.booked');
+        const appointmentButton = document.getElementById('make-appointment-btn');
+        if (selectedCells.length === 1) {
+            appointmentButton.disabled = false;
+            document.getElementById('appointment-msg').innerText = '';
+        } else {
+            appointmentButton.disabled = true;
+            document.getElementById('appointment-msg').innerText = 'Please select only one slot!';
+        }
+    }
+
+    document.getElementById('appointment-form').addEventListener('submit', function(event) {
+        const selectedCell = document.querySelector('.working-hour-cell.booked');
+        if (selectedCell) {
+            const day = selectedCell.getAttribute('data-day');
+            const hour = selectedCell.getAttribute('data-hour');
+            const selectedTime = `${day}:${hour}`;
+            document.getElementById('selected-time').value = selectedTime;
+        }
+    });
+</script>
+{% endblock %}

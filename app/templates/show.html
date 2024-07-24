@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}{{ article.title }}{% endblock %}
+
+{% block content %}
+<div class="container styled-article">
+    <h1>{{ article.title }}</h1>
+    <h3>{{ article.description }}</h3>
+    <p>{{ article.content }}</p>
+    <p><strong>Author:</strong> {{ author.username }}</p>
+
+    {% if current_user.is_authenticated and current_user.user_type != 'normal_user' %}
+        <a href="{{ url_for('main.edit', id=article.id) }}" class="styled-link">Edit Article</a>
+    {% endif %}
+</div>
+{% endblock %}

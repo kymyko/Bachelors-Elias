@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+    {% if current_user != 'psychologist' %}
+        <h1 class="article_header">Find articles that suit your interest the best</h1>
+        <h4 class="article_header_description">We highly value your experience on our website, so we want you to have access to the newest articles from our
+        experienced psychologists</h4>
+    {% endif %}
+
+    {% if current_user == 'psychologist' %}
+        <h1 class="article_header">Find articles that suit your interest the best</h1>
+        <h4 class="article_header_description">We highly value your experience on our website, so we want you to find inspiration in the newest articles from our
+        known psychologists</h4>
+    {% endif %}
+
+<div class="articles-container">
+    <div class="articles-list">
+        {% for article in articles %}
+            <div class="article">
+                <h3><a href="{{ url_for('main.show', id=article.id) }}">{{ article.title }}</a></h3>
+                <p>{{ article.description }}</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% if current_user.is_authenticated and current_user.user_type != 'normal_user' %}
+    <a href="{{ url_for('main.create') }}" class="create-article-link">Create New Article</a>
+{% endif %}
+
+{% if current_user.user_type == 'normal_user' %}
+    <h3 class="chat-with-ai_header">Chat with our AI</h3>
+    <h4 class="chat-with-ai">
+        Elias is here to talk to you and give you advice on your journey to recovery! It is designed to analyze the
+        context and to offer responses that can help you develop self-improvement skills in your unique situation.
+    </h4>
+    <div id="chat-container">
+        <div id="chat-box">
+            <p id="initial-question">{{ initial_question }}</p>
+        </div>
+        <label for="user-input"></label><input type="text" id="user-input" placeholder="Type your message here...">
+        <button id="send-button">Send</button>
+    </div>
+{% endif %}
+
+{% if current_user.user_type == 'normal_user' %}
+    <br>
+    <section>
+        <h2 class="doctors-list-header">We are here for you in real life as well!</h2>
+        <h4 class="doctors-list-detail">
+            Access experienced and qualified psychologists, therapists, and consultants from various countries.
+        You can choose an expert who best suits your needs and preferences, thus ensuring high quality support.
+        </h4>
+        <h3 class="fine-doctors">Our fine doctors:</h3>
+        <div class="doctors-container">
+            <ul class="doctors-list">
+                {% for psychologist in psychologists %}
+                        <a href="{{ url_for('main.psychologist_profile', id=psychologist.id) }}">
+                            <li>
+                                <p> <strong>{{ psychologist.name }}</strong> - specialization: {{ psychologist.specialization }}</p>
+                            </li>
+                        </a>
+                {% endfor %}
+            </ul>
+        </div>
+    </section>
+{% endif %}
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+    $('#send-button').click(function() {
+        sendMessage();
+    });
+
+    $('#user-input').keypress(function(event) {
+        if (event.keyCode === 13) {
+            sendMessage();
+        }
+    });
+
+    function sendMessage() {
+        var userInput = $('#user-input').val();
+        if (userInput.trim() !== '') {
+            appendUserMessage(userInput);
+            $('#user-input').val('');
+            $.ajax({
+                type: 'POST',
+                url: '/chatbot',
+                contentType: 'application/json',
+                data: JSON.stringify({ prompt: userInput }),
+                success: function(response) {
+                    appendChatbotResponse(response.response);
+                },
+                error: function(error) {
+                    console.error('Error:', error);
+                }
+            });
+        }
+    }
+
+    function appendUserMessage(message) {
+        $('#chat-box').append('<p>User: ' + message + '</p>');
+    }
+
+    function appendChatbotResponse(response) {
+        // Remove empty lines after "You:" and "AI:"
+        var chatBox = $('#chat-box');
+        if (chatBox.children().last().text().startsWith('You:')) {
+            chatBox.append('<p>Elias: ' + response + '</p>');
+        } else {
+            chatBox.append('<p>Elias: ' + response + '</p><br>');
+        }
+    }
+});
+</script>
+
+
+{% endblock %}

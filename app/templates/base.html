@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Elias{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+</head>
+<body>
+{% if is_main_page %}
+<header style="background-image: url('{{ url_for('static', filename='images/Elias_Wallpaper.jpeg') }}'); background-size: cover; background-repeat: no-repeat; background-position: center;">
+    <nav>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='images/Elias_Logo.png') }}" alt="none">
+        </div>
+        <div class="nav-links">
+            <a href="{{ url_for('main.index') }}">Home</a>
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('users.profile') }}">Profile</a>
+                <a href="{{ url_for('auth.logout') }}">Logout</a>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}">Login</a>
+                <a href="{{ url_for('auth.register') }}">Register</a>
+            {% endif %}
+        </div>
+        <div class="spacer"></div>
+    </nav>
+    <h1 class="greeting_header">
+        The goal of the Elias app is not just to provide temporary relief, but to assist users in developing the skills
+        necessary for long-term improvement and maintenance of mental health.
+    </h1>
+    <h2 class="greeting_header">Powered by Elias - your personal AI companion for well-being!</h2>
+</header>
+{% else %}
+<header style="background: linear-gradient(to right, #DCD6F7, #A6B1E1); height: 160px;">
+    <nav>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='images/Elias_Logo.png') }}" alt="none">
+        </div>
+        <div class="nav-links">
+            <a href="{{ url_for('main.index') }}">Home</a>
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('users.profile') }}">Profile</a>
+                <a href="{{ url_for('auth.logout') }}">Logout</a>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}">Login</a>
+                <a href="{{ url_for('auth.register') }}">Register</a>
+            {% endif %}
+        </div>
+        <div class="spacer"></div>
+    </nav>
+</header>
+{% endif %}
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    <footer>
+        <p>&copy; 2024 Mental Health App</p>
+    </footer>
+    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+    <script>
+        toastr.options = {
+            "closeButton": true,
+            "debug": false,
+            "newestOnTop": true,
+            "progressBar": true,
+            "positionClass": "toast-top-right",
+            "preventDuplicates": true,
+            "onclick": null,
+            "showDuration": "300",
+            "hideDuration": "1000",
+            "timeOut": "5000",
+            "extendedTimeOut": "1000",
+            "showEasing": "swing",
+            "hideEasing": "linear",
+            "showMethod": "fadeIn",
+            "hideMethod": "fadeOut"
+        }
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    toastr["{{ category }}"]("{{ message }}");
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </script>
+</body>
+</html>

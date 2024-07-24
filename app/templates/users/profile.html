@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Profile{% endblock %}
+{% block content %}
+<h2 class="profile-header">Profile</h2>
+    <div class="profile-card">
+        <p><strong>Username:</strong> {{ current_user.username }}</p>
+        <p><strong>Email:</strong> {{ current_user.email }}</p>
+        {% if current_user.user_type != 'admin' %}
+            <p><strong>Address:</strong> {{ current_user.address }}</p>
+        {% endif %}
+        <p><strong>User Type:</strong> {{ current_user.user_type }}</p>
+
+        {% if user.user_type == 'psychologist' %}
+        <p><strong>Name:</strong> {{ user.psychologist.name or "No information provided yet!!!" }}</p>
+        <p><strong>Age:</strong> {{ user.psychologist.age or "No information provided yet!!!" }}</p>
+        <p><strong>Specialization:</strong> {{ user.psychologist.specialization or "No information provided yet!!!" }}</p>
+        {% endif %}
+    </div>
+
+    <div class="edit-profile-btn">
+        <a href="{{ url_for('users.edit_profile') }}">Edit Profile</a>
+    </div>
+
+
+
+{% if current_user.user_type == 'psychologist' %}
+<h3 class="schedule-header">Working Hours</h3>
+<form method="post" id="working-hours-form" action="{{ url_for('users.update_working_hours') }}">
+    {{ form.hidden_tag() }}
+    <input type="hidden" name="working_hours" id="working-hours-input">
+    <table class="table styled-table">
+        <thead>
+            <tr>
+                <th>Hour</th>
+                <th>Monday</th>
+                <th>Tuesday</th>
+                <th>Wednesday</th>
+                <th>Thursday</th>
+                <th>Friday</th>
+                <th>Saturday</th>
+                <th>Sunday</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for hour in range(8, 20) %}
+                <tr>
+                    <td>{{ hour }}:00</td>
+                    {% for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
+                        <td class="working-hour-cell {{ 'booked' if working_hours.get(day, {}).get(hour|string, 'Available') == 'Booked' else 'available' }}" data-day="{{ day }}" data-hour="{{ hour }}">
+                            {{ working_hours.get(day, {}).get(hour|string, 'Available') }}
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <button type="submit" class="btn btn-primary styled-button">Save Working Hours</button>
+</form>
+{% endif %}
+
+
+{% if current_user.user_type == 'normal_user' %}
+
+    <div class="user-appointments-card">
+        <h2 class="user-appointments-header">Your Appointments</h2>
+        <ul>
+        {% for appointment in appointments %}
+            <li class="user-appointment">
+                <strong>Appointment ID:</strong> {{ appointment.id }}<br>
+                <strong>Psychologist:</strong> {{ appointment_psychologist.name }}<br>
+                <strong>Address:</strong>  {{ appointment_psychologist.user.address }} <br>
+                <strong>Appointment day and time:</strong> {{ appointment.appointment_time }}<br>
+            </li>
+            <a class="delete-appointment-btn"> Cancel appointment</a>
+        {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
+{% if current_user.user_type == 'psychologist' %}
+    <div class="user-appointments-card">
+        <h2 class="user-appointments-header">Appointments with You</h2>
+        <ul>
+        {% for appointment in appointments %}
+            <li class="user-appointment">
+                {% if appointment_user %}
+                    <strong>Patient:</strong> {{ appointment_user.username }}<br>
+                {% endif %}
+                <strong>Appointment day and time:</strong> {{ appointment.appointment_time }}<br>
+            </li>
+        {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
+<form action="{{ url_for('users.delete_profile') }}" method="post">
+    {{ form.hidden_tag() }}
+    <button class="delete-profile-btn" type="submit" onclick="return confirm('Are you sure you want to delete your profile?');">Delete Profile</button>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.working-hour-cell').forEach(cell => {
+        cell.addEventListener('click', function () {
+            const currentStatus = this.innerText.trim();
+            if (currentStatus === 'Available') {
+                this.innerText = 'Booked';
+                this.classList.remove('available');
+                this.classList.add('booked');
+            } else if (currentStatus === 'Booked') {
+                this.innerText = 'Unavailable';
+                this.classList.remove('booked');
+                this.classList.add('unavailable');
+            } else {
+                this.innerText = 'Available';
+                this.classList.remove('unavailable');
+                this.classList.add('available');
+            }
+        });
+    });
+
+    document.getElementById('working-hours-form').addEventListener('submit', function (event) {
+        event.preventDefault();
+        let workingHours = {};
+        document.querySelectorAll('.working-hour-cell').forEach(function (cell) {
+            let day = cell.getAttribute('data-day');
+            let hour = cell.getAttribute('data-hour');
+            if (!workingHours[day]) {
+                workingHours[day] = {};
+            }
+            workingHours[day][hour] = cell.innerText.trim();
+        });
+        document.getElementById('working-hours-input').value = JSON.stringify(workingHours);
+        this.submit();
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const workingHours = JSON.parse('{{ working_hours|tojson|safe }}');
+        document.querySelectorAll('.working-hour-cell').forEach(function (cell) {
+            let day = cell.getAttribute('data-day');
+            let hour = cell.getAttribute('data-hour');
+            if (workingHours[day] && workingHours[day][hour]) {
+                cell.innerText = workingHours[day][hour];
+                if (workingHours[day][hour] === 'Booked') {
+                    cell.classList.add('booked');
+                } else if (workingHours[day][hour] === 'Unavailable') {
+                    cell.classList.add('unavailable');
+                } else {
+                    cell.classList.add('available');
+                }
+            } else {
+                cell.innerText = 'Available';
+                cell.classList.add('available');
+            }
+        });
+    });
+
+    //CHATBOT:
+    $(document).ready(function () {
+        $("#send-button").click(function () {
+            const userInput = $("#user-input").val().trim();
+            if (userInput === '') {
+                alert("Message cannot be empty!");
+                return;
+            }
+            $("#chat-box").append(`<p>You: ${userInput}</p>`);
+            $("#user-input").val('');
+
+            $.ajax({
+                url: '/chatbot/',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({message: userInput}),
+                success: function (response) {
+                    $("#chat-box").append(`<p>AI: ${response.response}</p>`);
+                }
+            });
+        });
+    });
+});
+</script>
+
+{% endblock %}
